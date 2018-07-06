@@ -1,7 +1,7 @@
 //项目的全局配置
 var express = require('express');
 var path = require('path');
-var usersRouter = require('./routes/users');
+var Router = require('./router');
 
 var app = express();
 
@@ -12,7 +12,7 @@ app.engine('html', require('express-art-template'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 //应用路由
-app.use(usersRouter);
+app.use(Router);
 
 module.exports = app;
 

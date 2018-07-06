@@ -4,12 +4,11 @@
 最后响应
 
 #### 项目结构
-- bin /www.js项目入口执行文件
 - node_modules/ 安装的模块
 - public/ 客户端若请求该路径，则返回该静态资源（也可选择处理）
 - routes/ 路由分发，处理客户端http协议请求
 - views/ 模板引擎的渲染页面，页面类型设置为html
-- app.js 全局配置
+- app.js 项目入口文件和全局配置
 - common.js 全局变量
 - LICENSE 项目规定的协议
 - package.json 项目的元数据
@@ -19,13 +18,14 @@
 #### GITHUB
 除了node_modules目录，其他文件和文件目录都上传到github.
 
-#### 接口文档
+#### 接口文档(根据postman工具维护)
 <table>
 <tr>
 <th>请求方法</th>
 <th>路径</th>
 <th>参数</th>
 <th>响应例子</th>
+<th>响应code</th>
 <th>描述</th>
 </tr>
 
@@ -33,7 +33,9 @@
 <td>post</td>
 <td>/jokeAdd</td>
 <td>userID,jokeContent</td>
-<td>成功：{code:0,msg:'success'}失败：{code:1,msg:'failed'}</td>
+<td>http://localhost:3000/jokeAdd?userID=zw1&jokeContent=this is jokeContent&userName=hopeme&iconPath=http://localhost:3000/public/images/test.png  
+{"code":0,"msg":"success"}</td>
+<td>0:成功 1：空记录 2：服务器内部错误</td>
 <td>提交段子</td>
 </tr>
 
@@ -41,7 +43,9 @@
 <td>post</td>
 <td>/jokeGet</td>
 <td>userID</td>
-<td>成功：{code:0,msg:'success',data:[{userID:'ZW',...总之是数据库里的一条段子记录}]}</td>
+<td>http://localhost:3000/jokeGet?userID=zzz</td>  
+{"code":1,"msg":"empty","data":[]}
+<td>0:成功 1：空记录 2：服务器内部错误</td>
 <td>获取用户自身发布的所有段子</td>
 </tr>
 
@@ -50,13 +54,16 @@
 <td>/jokeGetAll</td>
 <td>无</td>
 <td>成功：{code:0,msg:'success',data:[{userID:'ZW',...总之是数据库里的一条段子记录}]}</td>
+<td>0:成功 1：空记录 2：服务器内部错误</td>
 <td>获取所有用户自身发布的所有段子</td>
 </tr>
 </table>
 
+#### 页面功能实现
+- jokeAdd发布段子  
+面向对象，通过运用对象，达到目标。一个jokeAdd的Page对象里的目标是将用户的段子信息提交并
+处理反馈。所以弄个对象来采集基础信息，弄个负责发送信息的，弄个处理xxx的，结束。
+
 #### help
-删除远程文件夹
-git rm --cached -r useless
-git commit -m "remove directory from remote repository"
-git push
+
 
