@@ -1,12 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const Joke = require('./model/joke');
+const util = require('./utils/util');
 
-var allUserJokes={
-    currentPage:1,
-    num:6,//每一页记录的数量
-    data:[]
-};//描述所有joke记录的对象
+//一个用户获取到的（个人或所有人）joke记录的对象，注意下面仅用于初始赋值给
+// userMeta["user1"].allUserJokes
+var allUserJokes = {
+    currentPage: 1,
+    num: 6,//每一页记录的数量
+    data: []
+};
+//保存各个用户独立的浏览状态 如 userMeta["user1"].allUserJokes ,临时用户即userID:""的，生成一个
+var userMeta = {};
 
 
 router.get('/', function (req, res) {
@@ -33,11 +38,11 @@ router.get('/jokeGet', function (req, res) {
     Joke.find(req.query, function (err, docs) {
         if (err) {
             console.log(err);
-            res.send({code:2,msg:'fail'});
+            res.send({code: 2, msg: 'fail'});
             return;
         }
-        if(docs.length===0){
-            res.send(JSON.stringify({code:1,msg:'empty',data:[]}));
+        if (docs.length === 0) {
+            res.send(JSON.stringify({code: 1, msg: 'empty', data: []}));
             return;
         }
         res.send(JSON.stringify({code: 0, msg: 'success', data: docs}));
@@ -46,54 +51,75 @@ router.get('/jokeGet', function (req, res) {
 
 router.get('/jokeGetAll', function (req, res) {
     console.log('req:' + JSON.stringify(req.query));
-    Joke.find().exec(function(err,allJokes){
-        if(err){
-            res.send(JSON.stringify({code:2,msg:'fail'}))
+    Joke.find().exec(function (err, allJokes) {
+        if (err) {
+            res.send(JSON.stringify({code: 2, msg: 'fail'}))
             console.log(err);
             return;
         }
-        if(allJokes.length===0){
-            res.send(JSON.stringify({code:1,msg:'empty'}));
+        if (allJokes.length === 0) {
+            res.send(JSON.stringify({code: 1, msg: 'empty'}));
             return;
         }
-        res.send(JSON.stringify({code:0,msg:'success',data:allJokes}));
+        res.send(JSON.stringify({code: 0, msg: 'success', data: allJokes}));
     })
 })
 
-router.get('/getJokesByPage',function (req,res) {
-    console.log('/getJokesByPage ',JSON.stringify(req.query));
-    //查询所有用户的所有数据，并更新userJokes对象
-    if(req.query.page==1){
-        Joke.find().exec(function (err,allJokes) {
-            if(err){
-                res.send(JSON.stringify({code:2,msg:'fail'}))
+router.get('/getJokesByPage', function (req, res) {
+    console.log('/getJokesByPage ', JSON.stringify(req.query));
+    responseGetJokesByPage(req, res);
+})
+
+function responseGetJokesByPage(req, res) {
+    //isAll:""查询所有用户joke记录，否则查询对应用户joke记录
+    var isAll = req.query.isAll;
+    var con;
+    //若首次进入首页，分配token，以保持访问状态(默认认为其他页面请求已有token)
+    var token = req.get('token');
+    if (!token) {
+        token = util.guid();
+    }
+    res.setHeader('token', token);
+    //请求第一页数据
+    if (req.query.page == 1) {
+        if (isAll == 0) {
+            con = {userID: req.query.userID};
+        }
+        Joke.find(con).exec(function (err, allJokes) {
+            console.log('allJokes:'+allJokes.length);
+            if (err) {
+                res.send(JSON.stringify({code: 2, msg: 'fail'}))
                 console.log(err);
                 return;
             }
-            if(allJokes.length===0){
-                res.send(JSON.stringify({code:1,msg:'empty'}));
+            if (allJokes.length === 0) {
+                res.send(JSON.stringify({code: 1, msg: 'empty'}));
                 return;
             }
-            allUserJokes.currentPage=1;
-            allUserJokes.data=allJokes;
-            res.send(JSON.stringify({code:0,msg:'success',data:allUserJokes.data.slice(0,allUserJokes.num)}));
+            userMeta[token] = {
+                allUserJokes: allUserJokes
+            };
+            userMeta[token].allUserJokes.currentPage = 1;
+            userMeta[token].allUserJokes.data = allJokes;
+            res.send(JSON.stringify({
+                code: 0,
+                msg: 'success',
+                data: userMeta[token].allUserJokes.data.slice(0, userMeta[token].allUserJokes.num)
+            }));
         })
-    }else{ //请求下一页数据，从userJokes取数据
-        var start=allUserJokes.currentPage*allUserJokes.num;
-        console.log("start:"+start+" page:"+allUserJokes.currentPage);
-        if(start>allUserJokes.data.length){
-            res.send(JSON.stringify({code:3,msg:'没有更多数据了',data:[]}));
+    } else { //请求下一页数据
+        var start = userMeta[token].allUserJokes.currentPage * userMeta[token].allUserJokes.num;
+        if (start > userMeta[token].allUserJokes.data.length) {
+            res.send(JSON.stringify({code: 3, msg: '没有更多数据了', data: []}));
             return;
         }
         res.send(JSON.stringify({
-            code:0,
-            msg:'success',
-            data:allUserJokes.data.slice(start,start+allUserJokes.num )
+            code: 0,
+            msg: 'success',
+            data: userMeta[token].allUserJokes.data.slice(start, start + userMeta[token].allUserJokes.num)
         }))
-        allUserJokes.currentPage++;
-
+        userMeta[token].allUserJokes.currentPage++;
     }
-})
-
+}
 
 module.exports = router;
