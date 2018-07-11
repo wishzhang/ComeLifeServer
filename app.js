@@ -14,6 +14,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 //应用路由
 app.use(Router);
 
+
 module.exports = app;
 
 app.listen(3000,function(){

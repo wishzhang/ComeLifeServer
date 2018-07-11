@@ -25,37 +25,44 @@
 <th>路径</th>
 <th>参数</th>
 <th>响应例子</th>
-<th>响应code</th>
 <th>描述</th>
+<td>使用</td>
 </tr>
 
 <tr>
-<td>post</td>
+<td>get</td>
 <td>/jokeAdd</td>
 <td>userID,jokeContent</td>
-<td>http://localhost:3000/jokeAdd?userID=zw1&jokeContent=this is jokeContent&userName=hopeme&iconPath=http://localhost:3000/public/images/test.png  
-{"code":0,"msg":"success"}</td>
-<td>0:成功 1：空记录 2：服务器内部错误</td>
+<td>成功：{code:0,msg:'success'}失败：{code:1,msg:'failed'}</td>
 <td>提交段子</td>
+<td>是</td>
 </tr>
 
 <tr>
-<td>post</td>
+<td>get</td>
 <td>/jokeGet</td>
 <td>userID</td>
-<td>http://localhost:3000/jokeGet?userID=zzz</td>  
-{"code":1,"msg":"empty","data":[]}
-<td>0:成功 1：空记录 2：服务器内部错误</td>
+<td>成功：{code:0,msg:'success',data:[{userID:'ZW',...总之是数据库里的一条段子记录}]}</td>
 <td>获取用户自身发布的所有段子</td>
+<td>否</td>
 </tr>
 
 <tr>
-<td>post</td>
+<td>get</td>
 <td>/jokeGetAll</td>
 <td>无</td>
 <td>成功：{code:0,msg:'success',data:[{userID:'ZW',...总之是数据库里的一条段子记录}]}</td>
-<td>0:成功 1：空记录 2：服务器内部错误</td>
 <td>获取所有用户自身发布的所有段子</td>
+<td>否</td>
+</tr>
+
+<tr>
+<td>get</td>
+<td>/getJokesByPage</td>
+<td>userID&isALL=1&page=1</td>
+<td>成功：{code:0,msg:'success',data:[{userID:'ZW',...是数据库里的段子记录}]}</td>
+<td>根据参数，获取对应的段子，</td>
+<td>是</td>
 </tr>
 </table>
 
