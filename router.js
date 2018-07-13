@@ -1,13 +1,10 @@
 const express = require('express');
 const router = express.Router();
-// const Joke = require('./model/joke');
 const UserJoke = require('./model/user');
 const util = require('./utils/util');
 const bodyParser = require('body-parser');
 
 router.use(bodyParser.urlencoded({extended: true}));
-// router.use(bodyParser.raw);
-// router.use(bodyParser.urlencoded);
 router.use(bodyParser.json());
 
 var resObj = {
@@ -18,22 +15,14 @@ var resObj = {
             data: data
         });
     },
-    code1: function () {
+    code1: function (data) {
         return JSON.stringify({
             code: 1,
             msg: '服务器内部错误',
-            data: null
+            data: data||[]
         });
     }
 };
-
-var resDataHandler={
-    allUserJoke:function (data) {
-        return{
-
-        }
-    }
-}
 
 var allUserJokes = {
     currentPage: 1,
@@ -42,18 +31,133 @@ var allUserJokes = {
 };
 //保存各个用户独立的浏览状态 如 userMeta["user1"].allUserJokes
 var userMeta = {};
+var token;
 
 router.use(function (req, res, next) {
-    console.log('http request...');
     //为每个访问服务器端口的用户分配token,
-    var token = req.header('token');
+    token = req.header('token');
     if (!token) {
         token = util.guid();
     }
-    res.cookie('token', token);
+    console.log('token:' + token);
+    res.setHeader('token', token);
     userMeta[token] = {};
     next();
 });
+
+router.post('/getUserCollections', function (req, res) {
+    UserJoke.User.findOne({uid: token}).populate('collections').exec(function (err, user) {
+        if (err) {
+            console.log(err);
+            res.send(resObj.code1());
+            return;
+        }
+        if (user) {
+            res.send(resObj.code0([user]));
+        } else {
+            res.send(resObj.code1([]));
+        }
+    })
+})
+
+router.post('/jokeCollectorRemove', function (req, res) {
+    UserJoke.Joke.findOne({_id: req.body.jokeId}, function (err, joke) {
+        if (err) {
+            console.log(err);
+            res.send(resObj.code1());
+            return;
+        }
+        if (joke) {
+            for (var i = 0; i < joke.collectors.length; i++) {
+                if (req.body.userId == joke.collectors[i]) {
+                    joke.collectors.splice(i, 1);
+                    i--;
+                }
+            }
+            joke.save(function (err, joke) {
+                if (err) {
+                    console.log(err);
+                    res.send(resObj.code1());
+                    return;
+                }
+                UserJoke.User.findOne({_id:req.body.userId}, function (err, user) {
+                    if (err) {
+                        console.log(err);
+                        res.send(resObj.code1());
+                        return;
+                    }
+                    if (user) {
+                        var c = user.collections;
+                        for (var j = 0; j < c.length; j++) {
+                            if (c[j] == req.body.jokeId) {
+                                c.splice(j, 1);
+                                i--;
+                            }
+                        }
+                        user.save(function (err, user) {
+                            if (err) {
+                                console.log(err);
+                                res.send(resObj.code1());
+                                return;
+                            }
+                            res.send(resObj.code0());
+                        })
+                    } else {
+                        res.send(resObj.code1());
+                    }
+                })
+            })
+        } else {
+            res.send(resObj.code1());
+        }
+    });
+
+})
+
+router.post('/jokeCollectorAdd', function (req, res) {
+    UserJoke.Joke.findOne({_id: req.body.jokeId}, function (err, joke) {
+        console.log('req.body:'+JSON.stringify(req.body));
+        if (err) {
+            console.log(err);
+            res.send(resObj.code1());
+            return;
+        }
+        if (joke) {
+            console.log(JSON.stringify(joke));
+            joke.collectors.push(req.body.userId);
+            joke.save(function (err, joke) {
+                if (err) {
+                    console.log(err);
+                    res.send(resObj.code1());
+                    return;
+                }
+                UserJoke.User.findOne({uid:token}, function (err, user) {
+                    if (err) {
+                        console.log(err);
+                        res.send(resObj.code1());
+                        return;
+                    }
+                    if (user) {
+                        user.collections.push(req.body.jokeId);
+                        user.save(function (err, user) {
+                            if (err) {
+                                console.log(err);
+                                res.send(resObj.code1());
+                                return;
+                            }
+                            res.send(resObj.code0());
+                        })
+                    } else {
+                        res.send(resObj.code1());
+                    }
+                })
+            })
+        } else {
+            res.send(resObj.code1());
+        }
+    });
+
+})
 /**
  * {
     nickName:String,
@@ -64,10 +168,10 @@ router.use(function (req, res, next) {
     avatarUrl:String,
     jokeContent:String,
 }
-    //TODO,BUG:事务
+    TODO,BUG:事务
  */
 router.post('/userJokeAdd', function (req, res) {
-    UserJoke.User.findOne({nickName: req.body.nickName}, function (err, user) {
+    UserJoke.User.findOne({uid: token}, function (err, user) {
         if (err) {
             console.log(err);
             res.send(resObj.code1());
@@ -75,6 +179,7 @@ router.post('/userJokeAdd', function (req, res) {
         }
         if (!user) {
             var user = new UserJoke.User({
+                uid: token,
                 nickName: req.body.nickName,
                 gender: req.body.gender,
                 city: req.body.city,
@@ -84,7 +189,7 @@ router.post('/userJokeAdd', function (req, res) {
             });
             var joke = new UserJoke.Joke({
                 jokeContent: req.body.jokeContent,
-                owner:user._id
+                owner: user._id
             });
             user.jokes.push(joke);
             user.save(function (err, user) {
@@ -105,7 +210,7 @@ router.post('/userJokeAdd', function (req, res) {
         } else {
             var joke = new UserJoke.Joke({
                 jokeContent: req.body.jokeContent,
-                owner:user._id
+                owner: user._id
             });
             user.jokes.push(joke);
             user.save(function (err, user) {
@@ -126,15 +231,11 @@ router.post('/userJokeAdd', function (req, res) {
         }
     })
 });
+
 /**
- * 分页
- * page=0 第一页
- * page=1 下一页
- * 响应参考 User
  * 后端不分页了-_-...
  */
 router.post('/allUserJoke', function (req, res) {
-    console.log('allUserJoke...');
     UserJoke.User.find().populate('jokes').exec(function (err, users) {
         if (err) {
             console.log(err);
@@ -145,139 +246,35 @@ router.post('/allUserJoke', function (req, res) {
     })
 });
 
-router.post('/oneUserJoke',function (req,res) {
-    console.log('/oneUserJoke');
-    console.log('req.body:'+JSON.stringify(req.body));
-    UserJoke.User.findOne({nickName:req.body.nickName}).populate('jokes').exec(function (err,user) {
-        if(err||!user){
+router.post('/oneUserJoke', function (req, res) {
+    UserJoke.User.findOne({uid: token}).populate('jokes').exec(function (err, user) {
+        if (err) {
             console.log(err);
             res.send(resObj.code1());
             return;
         }
-        var arr=[];
-        arr.push(user);
-        res.send(resObj.code0(arr));
-    })
-})
-
-//没有唯一，内容相同也可重复提交
-/*router.get('/jokeAdd', function (req, res) {
-    console.log('req：' + JSON.stringify(req.query));
-    var joke = new Joke(req.query);
-    joke.publishTime = new Date();
-    joke.save(function (err) {
-        if (err) {
-            console.log(err);
-            res.send(JSON.stringify({code: 2, msg: 'fail'}));
-            return;
-        }
-        res.send(JSON.stringify({code: 0, msg: 'success'}));
-    })
-})
-
-router.get('/jokeGet', function (req, res) {
-    console.log('req:' + JSON.stringify(req.query));
-    Joke.find(req.query, function (err, docs) {
-        if (err) {
-            console.log(err);
-            res.send({code: 2, msg: 'fail'});
-            return;
-        }
-        if (docs.length === 0) {
-            res.send(JSON.stringify({code: 1, msg: 'empty', data: []}));
-            return;
-        }
-        res.send(JSON.stringify({code: 0, msg: 'success', data: docs}));
-    })
-})
-
-router.get('/jokeGetAll', function (req, res) {
-    console.log('req:' + JSON.stringify(req.query));
-    Joke.find().exec(function (err, allJokes) {
-        if (err) {
-            res.send(JSON.stringify({code: 2, msg: 'fail'}))
-            console.log(err);
-            return;
-        }
-        if (allJokes.length === 0) {
-            res.send(JSON.stringify({code: 1, msg: 'empty'}));
-            return;
-        }
-        res.send(JSON.stringify({code: 0, msg: 'success', data: allJokes}));
-    })
-})
-
-router.get('/getJokesByPage', function (req, res) {
-    console.log('/getJokesByPage ', JSON.stringify(req.query));
-    responseGetJokesByPage(req, res);
-})
-
-function responseGetJokesByPage(req, res) {
-    //isAll:""查询所有用户joke记录，否则查询对应用户joke记录
-    var isAll = req.query.isAll;
-    var con;
-    //若首次进入首页，分配token，以保持访问状态(默认认为其他页面请求已有token)
-    var token = req.get('token');
-    console.log('token:'+token);
-    if (!token) {
-        token = util.guid();
-    }
-    res.setHeader('token', token);
-    //请求第一页数据
-    if (req.query.page == 1) {
-        if (isAll == 0) {
-            con = {userID: req.query.userID};
-        }
-        Joke.find(con).exec(function (err, allJokes) {
-            //以publishTime从大到小排序
-            //比较器，从大到小
-            var compare=function (prop) {
-                return function (obj1, obj2) {
-                    var val1 = obj1[prop];
-                    var val2 = obj2[prop]; if (val1 > val2) {
-                        return -1;
-                    } else if (val1 < val2) {
-                        return 1;
-                    } else {
-                        return 0;
-                    }
+        if (user) {
+            res.send(resObj.code0([user]));
+        } else {
+            var user = new UserJoke.User({
+                uid: token,
+                nickName: req.body.nickName||'',
+                gender: req.body.gender||'',
+                city: req.body.city||'',
+                province: req.body.province||'',
+                country: req.body.country||'',
+                avatarUrl: req.body.avatarUrl||''
+            });
+            user.save(function (err,user) {
+                if(err){
+                    console.log(err);
+                    res.send(resObj.code1());
+                    return;
                 }
-            };
-            allJokes.sort(compare('publishTime'));
-            console.log('allJokes:'+allJokes.length);
-            if (err) {
-                res.send(JSON.stringify({code: 2, msg: 'fail'}))
-                console.log(err);
-                return;
-            }
-            if (allJokes.length === 0) {
-                res.send(JSON.stringify({code: 1, msg: 'empty'}));
-                return;
-            }
-            userMeta[token] = {
-                allUserJokes: allUserJokes
-            };
-            userMeta[token].allUserJokes.currentPage = 1;
-            userMeta[token].allUserJokes.data = allJokes;
-            res.send(JSON.stringify({
-                code: 0,
-                msg: 'success',
-                data: userMeta[token].allUserJokes.data.slice(0, userMeta[token].allUserJokes.num)
-            }));
-        })
-    } else { //请求下一页数据
-        var start = userMeta[token].allUserJokes.currentPage * userMeta[token].allUserJokes.num;
-        if (start > userMeta[token].allUserJokes.data.length) {
-            res.send(JSON.stringify({code: 3, msg: '没有更多数据了', data: []}));
-            return;
+                res.send(resObj.code0([user]));
+            })
         }
-        res.send(JSON.stringify({
-            code: 0,
-            msg: 'success',
-            data: userMeta[token].allUserJokes.data.slice(start, start + userMeta[token].allUserJokes.num)
-        }))
-        userMeta[token].allUserJokes.currentPage++;
-    }
-}*/
+    })
+})
 
 module.exports = router;
