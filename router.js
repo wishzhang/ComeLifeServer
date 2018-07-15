@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const UserJoke = require('./model/user');
+const Sentence=require('./model/sentence');
 const util = require('./utils/util');
 const bodyParser = require('body-parser');
 
@@ -44,9 +45,204 @@ router.use(function (req, res, next) {
     userMeta[token] = {};
     next();
 });
+/*
+* 日记
+* */
+
+router.post('/addOlive',function (req,res) {
+    UserJoke.User.findOne({_id:req.body.user_id}).exec(function (err,user) {
+        if(err){
+            console.log(err);
+            res.send(resObj.code1());
+            return;
+        }
+        if(user){
+            var olive=new UserJoke.Olive({
+                content:req.body.oliveContent,
+                owner:user._id
+            });
+            user.olives.push(olive);
+            user.save(function (err,user) {
+                if(err){
+                    console.log(err);
+                    res.send(resObj.code1());
+                    return;
+                }
+                olive.save(function (err,user) {
+                    if(err){
+                        console.log(err);
+                        res.send(resObj.code1());
+                        return;
+                    }
+                    res.send(resObj.code0());
+                })
+            })
+        }else{
+            res.send(resObj.code1());
+        }
+    })
+})
+
+router.post('/editOlive',function (req,res) {
+    UserJoke.Olive.findOne({_id:req.body.olive_id},function (err,olive) {
+        if(err){
+            console.log(err);
+            res.send(resObj.code1());
+            return;
+        }
+        if(olive){
+            olive.content=req.body.oliveContent;
+            olive.save(function (err,olive) {
+                if(err){
+                    console.log(err);
+                    res.send(resObj.code1());
+                    return;
+                }
+                res.send(resObj.code0());
+            })
+        }else {
+            res.send(resObj.code1());
+        }
+    })
+});
+
+router.post('/getOlives',function (req,res) {
+    UserJoke.Olive.find({owner:req.body.user_id}).exec(function (err,olives) {
+        if(err){
+            console.log(err);
+            res.send(resObj.code1());
+            return;
+        }
+        if(olives){
+            res.send(resObj.code0(olives));
+        }else{
+            res.send(resObj.code1());
+        }
+    })
+});
+
+router.post('/deleteOlive',function (req,res) {
+    UserJoke.Olive.findOneAndDelete({_id:req.body.olive_id},function (err,olive) {
+        if(err){
+            console.log(err);
+            res.send(resObj.code1());
+            return;
+        }
+        if(olive){
+            UserJoke.User.findOne({_id:olive.owner}).exec(function (err,user) {
+                if(err){
+                    console.log(err);
+                    res.send(resObj.code1());
+                    return;
+                }
+                if(user){
+                    var olives=user.olives;
+                    for(var i=0;i<olives.length;i++){
+                        if(olives[i]==olive._id.toString()){
+                            olives.splice(i,1);
+                            i--;
+                        }
+                    }
+                    user.save(function (err,user) {
+                        if(err){
+                            console.log(err);
+                            res.send(resObj.code1());
+                            return;
+                        }
+                        res.send(resObj.code0());
+                    })
+                }else{
+                    res.send(resObj.code1());
+                }
+            })
+        }else{
+            res.send(resObj.code1());
+        }
+    })
+})
+
+/*
+* 句子迷
+* */
+router.post('/getSentences',function (req,res) {
+    Sentence.find().exec(function (err,sentences) {
+        if(err){
+            console.log(err);
+            res.send(resObj.code1());
+            return;
+        }
+        res.send(resObj.code0(sentences));
+    })
+})
+
+router.post('/addSentence',function (req,res) {
+    var sentence=new Sentence({
+        content:req.body.content,
+        author:req.body.author
+    });
+    sentence.save(function (err,sentence) {
+        if(err){
+            console.log(err);
+            res.send(resObj.code1());
+            return;
+        }
+        res.send(resObj.code0());
+    })
+});
+
+
+/**
+ * 投诉与建议
+ * 所有用户都创建
+ */
+router.post('/addFeedback',function(req,res){
+    UserJoke.User.findOne({_id:req.body.user_id},function (err,user) {
+        if(err){
+            console.log(err);
+            res.send(resObj.code1());
+            return;
+        }
+        if(user){
+            var feedback=new UserJoke.Feedback({
+                feedbackContent:req.body.content,
+                email:req.body.email,
+                owner:req.body.user_id
+            });
+            user.feedbacks.push(feedback);
+            user.save(function (err,user) {
+                if(err){
+                    console.log(err);
+                    res.send(resObj.code1());
+                    return;
+                }
+                feedback.save(function (err) {
+                    if(err){
+                        console.log(err);
+                        res.send(resObj.code1());
+                        return;
+                    }
+                    res.send(resObj.code0());
+                })
+            })
+        }else{
+            var feedback=new UserJoke.Feedback({
+                feedbackContent:req.body.content,
+                email:req.body.email
+            })
+            feedback.save(function (err,feedback) {
+                if(err){
+                    console.log(err);
+                    res.send(resObj.code1());
+                    return;
+                }
+                res.send(resObj.code0());
+            })
+        }
+    })
+})
 
 router.post('/getUserCollections', function (req, res) {
-    UserJoke.User.findOne({uid: token}).populate('collections').exec(function (err, user) {
+    UserJoke.User.findOne({_id: req.body.user_id}).populate('collections').exec(function (err, user) {
         if (err) {
             console.log(err);
             res.send(resObj.code1());
@@ -61,7 +257,7 @@ router.post('/getUserCollections', function (req, res) {
 })
 
 router.post('/jokeCollectorRemove', function (req, res) {
-    UserJoke.Joke.findOne({_id: req.body.jokeId}, function (err, joke) {
+    UserJoke.Joke.findOne({_id: req.body.joke_id}, function (err, joke) {
         if (err) {
             console.log(err);
             res.send(resObj.code1());
@@ -69,7 +265,7 @@ router.post('/jokeCollectorRemove', function (req, res) {
         }
         if (joke) {
             for (var i = 0; i < joke.collectors.length; i++) {
-                if (req.body.userId == joke.collectors[i]) {
+                if (req.body.user_id == joke.collectors[i]) {
                     joke.collectors.splice(i, 1);
                     i--;
                 }
@@ -80,7 +276,7 @@ router.post('/jokeCollectorRemove', function (req, res) {
                     res.send(resObj.code1());
                     return;
                 }
-                UserJoke.User.findOne({_id:req.body.userId}, function (err, user) {
+                UserJoke.User.findOne({_id:req.body.user_id}, function (err, user) {
                     if (err) {
                         console.log(err);
                         res.send(resObj.code1());
@@ -89,7 +285,7 @@ router.post('/jokeCollectorRemove', function (req, res) {
                     if (user) {
                         var c = user.collections;
                         for (var j = 0; j < c.length; j++) {
-                            if (c[j] == req.body.jokeId) {
+                            if (c[j] == req.body.joke_id) {
                                 c.splice(j, 1);
                                 i--;
                             }
@@ -115,7 +311,7 @@ router.post('/jokeCollectorRemove', function (req, res) {
 })
 
 router.post('/jokeCollectorAdd', function (req, res) {
-    UserJoke.Joke.findOne({_id: req.body.jokeId}, function (err, joke) {
+    UserJoke.Joke.findOne({_id: req.body.joke_id}, function (err, joke) {
         console.log('req.body:'+JSON.stringify(req.body));
         if (err) {
             console.log(err);
@@ -124,21 +320,21 @@ router.post('/jokeCollectorAdd', function (req, res) {
         }
         if (joke) {
             console.log(JSON.stringify(joke));
-            joke.collectors.push(req.body.userId);
+            joke.collectors.push(req.body.user_id);
             joke.save(function (err, joke) {
                 if (err) {
                     console.log(err);
                     res.send(resObj.code1());
                     return;
                 }
-                UserJoke.User.findOne({uid:token}, function (err, user) {
+                UserJoke.User.findOne({_id:req.body.user_id}, function (err, user) {
                     if (err) {
                         console.log(err);
                         res.send(resObj.code1());
                         return;
                     }
                     if (user) {
-                        user.collections.push(req.body.jokeId);
+                        user.collections.push(req.body.joke_id);
                         user.save(function (err, user) {
                             if (err) {
                                 console.log(err);
@@ -171,46 +367,16 @@ router.post('/jokeCollectorAdd', function (req, res) {
     TODO,BUG:事务
  */
 router.post('/userJokeAdd', function (req, res) {
-    UserJoke.User.findOne({uid: token}, function (err, user) {
+    UserJoke.User.findOne({_id: req.body.user_id}, function (err, user) {
         if (err) {
             console.log(err);
             res.send(resObj.code1());
             return;
         }
-        if (!user) {
-            var user = new UserJoke.User({
-                uid: token,
-                nickName: req.body.nickName,
-                gender: req.body.gender,
-                city: req.body.city,
-                province: req.body.province,
-                country: req.body.country,
-                avatarUrl: req.body.avatarUrl
-            });
+        if (user) {
             var joke = new UserJoke.Joke({
                 jokeContent: req.body.jokeContent,
-                owner: user._id
-            });
-            user.jokes.push(joke);
-            user.save(function (err, user) {
-                if (err) {
-                    console.log(err);
-                    res.send(resObj.code1());
-                    return;
-                }
-                joke.save(function (err) {
-                    if (err) {
-                        console.log(err);
-                        res.send(resObj.code1());
-                        return;
-                    }
-                    res.send(resObj.code0());
-                })
-            });
-        } else {
-            var joke = new UserJoke.Joke({
-                jokeContent: req.body.jokeContent,
-                owner: user._id
+                owner: req.body.user_id
             });
             user.jokes.push(joke);
             user.save(function (err, user) {
@@ -228,6 +394,8 @@ router.post('/userJokeAdd', function (req, res) {
                     return res.send(resObj.code0());
                 })
             });
+        } else {
+            res.send(resObj.code1());
         }
     })
 });
@@ -247,7 +415,7 @@ router.post('/allUserJoke', function (req, res) {
 });
 
 router.post('/oneUserJoke', function (req, res) {
-    UserJoke.User.findOne({uid: token}).populate('jokes').exec(function (err, user) {
+    UserJoke.User.findOne({_id: req.body.user_id}).populate('jokes').exec(function (err, user) {
         if (err) {
             console.log(err);
             res.send(resObj.code1());
@@ -257,13 +425,12 @@ router.post('/oneUserJoke', function (req, res) {
             res.send(resObj.code0([user]));
         } else {
             var user = new UserJoke.User({
-                uid: token,
-                nickName: req.body.nickName||'',
-                gender: req.body.gender||'',
-                city: req.body.city||'',
-                province: req.body.province||'',
-                country: req.body.country||'',
-                avatarUrl: req.body.avatarUrl||''
+                nickName: req.body.nickName,
+                gender: req.body.gender,
+                city: req.body.city,
+                province: req.body.province,
+                country: req.body.country,
+                avatarUrl: req.body.avatarUrl
             });
             user.save(function (err,user) {
                 if(err){

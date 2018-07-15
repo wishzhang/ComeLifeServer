@@ -119,6 +119,34 @@
 <td>获取我收藏的所有段子</td>
 <td>是</td>
 </tr>
+
+
+<tr>
+<td>post</td>
+<td>/addFeedback</td>
+<td></td>
+<td></td>
+<td>提交投诉与建议</td>
+<td>是</td>
+</tr>
+
+<tr>
+<td>post</td>
+<td>/addSentence</td>
+<td></td>
+<td></td>
+<td>提交句子</td>
+<td>是</td>
+
+<tr>
+<td>post</td>
+<td>/getSentences</td>
+<td></td>
+<td></td>
+<td>获取所有句子</td>
+<td>是</td>
+</tr>
+
 </table>
 
 #### 页面功能实现
