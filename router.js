@@ -4,6 +4,7 @@ const UserJoke = require('./model/user');
 const Sentence=require('./model/sentence');
 const util = require('./utils/util');
 const bodyParser = require('body-parser');
+const http=require('http');
 
 router.use(bodyParser.urlencoded({extended: true}));
 router.use(bodyParser.json());
@@ -35,7 +36,7 @@ var userMeta = {};
 var token;
 
 router.use(function (req, res, next) {
-    //为每个访问服务器端口的用户分配token,
+    //为每个访问服务器端口的用户分配token
     token = req.header('token');
     if (!token) {
         token = util.guid();
@@ -45,14 +46,68 @@ router.use(function (req, res, next) {
     userMeta[token] = {};
     next();
 });
-/*
-* 日记
-* */
 
+
+router.post('/talk',function(request,response){
+    var params={
+        "perception": {
+            "inputText": {
+                "text":request.body.text
+            },
+            "selfInfo": {
+                "location": {
+                    "city": '',
+                    "province": ''
+                }
+            }
+        },
+        "userInfo": {
+            "apiKey": '038845cf41ee4a92a0f3380dbb20b776',
+            "userId": '123456'
+        }
+    };
+    const postData = JSON.stringify(params);
+
+    const options = {
+        hostname: 'openapi.tuling123.com',
+        port: 80,
+        path: '/openapi/api/v2',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': Buffer.byteLength(postData)
+        }
+    };
+
+    const req = http.request(options, (res) => {
+        console.log(`状态码: ${res.statusCode}`);
+        console.log(`响应头: ${JSON.stringify(res.headers)}`);
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+            response.send(resObj.code0(JSON.parse(chunk)));
+            console.log(`响应主体: ${chunk}`);
+        });
+        res.on('end', () => {
+            console.log('响应中已无数据。');
+        });
+    });
+
+    req.on('error', (e) => {
+        response.send(resObj.code1());
+        console.error(`请求遇到问题: ${e.message}`);
+    });
+
+// 写入数据到请求主体
+    req.write(postData);
+    req.end();
+})
+
+/**
+ * 日记
+ */
 router.post('/addOlive',function (req,res) {
     UserJoke.User.findOne({_id:req.body.user_id}).exec(function (err,user) {
         if(err){
-            console.log(err);
             res.send(resObj.code1());
             return;
         }
@@ -64,13 +119,11 @@ router.post('/addOlive',function (req,res) {
             user.olives.push(olive);
             user.save(function (err,user) {
                 if(err){
-                    console.log(err);
                     res.send(resObj.code1());
                     return;
                 }
                 olive.save(function (err,user) {
                     if(err){
-                        console.log(err);
                         res.send(resObj.code1());
                         return;
                     }
@@ -83,10 +136,10 @@ router.post('/addOlive',function (req,res) {
     })
 })
 
+//TODO:更新接口可修改
 router.post('/editOlive',function (req,res) {
     UserJoke.Olive.findOne({_id:req.body.olive_id},function (err,olive) {
         if(err){
-            console.log(err);
             res.send(resObj.code1());
             return;
         }
@@ -94,7 +147,6 @@ router.post('/editOlive',function (req,res) {
             olive.content=req.body.oliveContent;
             olive.save(function (err,olive) {
                 if(err){
-                    console.log(err);
                     res.send(resObj.code1());
                     return;
                 }
@@ -109,7 +161,6 @@ router.post('/editOlive',function (req,res) {
 router.post('/getOlives',function (req,res) {
     UserJoke.Olive.find({owner:req.body.user_id}).exec(function (err,olives) {
         if(err){
-            console.log(err);
             res.send(resObj.code1());
             return;
         }
@@ -124,14 +175,12 @@ router.post('/getOlives',function (req,res) {
 router.post('/deleteOlive',function (req,res) {
     UserJoke.Olive.findOneAndDelete({_id:req.body.olive_id},function (err,olive) {
         if(err){
-            console.log(err);
             res.send(resObj.code1());
             return;
         }
         if(olive){
             UserJoke.User.findOne({_id:olive.owner}).exec(function (err,user) {
                 if(err){
-                    console.log(err);
                     res.send(resObj.code1());
                     return;
                 }
@@ -145,7 +194,6 @@ router.post('/deleteOlive',function (req,res) {
                     }
                     user.save(function (err,user) {
                         if(err){
-                            console.log(err);
                             res.send(resObj.code1());
                             return;
                         }
@@ -161,13 +209,12 @@ router.post('/deleteOlive',function (req,res) {
     })
 })
 
-/*
-* 句子迷
-* */
+/**
+ * 句子迷
+ */
 router.post('/getSentences',function (req,res) {
     Sentence.find().exec(function (err,sentences) {
         if(err){
-            console.log(err);
             res.send(resObj.code1());
             return;
         }
@@ -182,7 +229,6 @@ router.post('/addSentence',function (req,res) {
     });
     sentence.save(function (err,sentence) {
         if(err){
-            console.log(err);
             res.send(resObj.code1());
             return;
         }
@@ -193,12 +239,11 @@ router.post('/addSentence',function (req,res) {
 
 /**
  * 投诉与建议
- * 所有用户都创建
+ * 所有用户都可以进来
  */
 router.post('/addFeedback',function(req,res){
     UserJoke.User.findOne({_id:req.body.user_id},function (err,user) {
         if(err){
-            console.log(err);
             res.send(resObj.code1());
             return;
         }
@@ -211,13 +256,11 @@ router.post('/addFeedback',function(req,res){
             user.feedbacks.push(feedback);
             user.save(function (err,user) {
                 if(err){
-                    console.log(err);
                     res.send(resObj.code1());
                     return;
                 }
                 feedback.save(function (err) {
                     if(err){
-                        console.log(err);
                         res.send(resObj.code1());
                         return;
                     }
@@ -231,7 +274,6 @@ router.post('/addFeedback',function(req,res){
             })
             feedback.save(function (err,feedback) {
                 if(err){
-                    console.log(err);
                     res.send(resObj.code1());
                     return;
                 }
@@ -241,10 +283,13 @@ router.post('/addFeedback',function(req,res){
     })
 })
 
+/**
+ * collection
+ */
+
 router.post('/getUserCollections', function (req, res) {
     UserJoke.User.findOne({_id: req.body.user_id}).populate('collections').exec(function (err, user) {
         if (err) {
-            console.log(err);
             res.send(resObj.code1());
             return;
         }
@@ -259,7 +304,6 @@ router.post('/getUserCollections', function (req, res) {
 router.post('/jokeCollectorRemove', function (req, res) {
     UserJoke.Joke.findOne({_id: req.body.joke_id}, function (err, joke) {
         if (err) {
-            console.log(err);
             res.send(resObj.code1());
             return;
         }
@@ -272,13 +316,11 @@ router.post('/jokeCollectorRemove', function (req, res) {
             }
             joke.save(function (err, joke) {
                 if (err) {
-                    console.log(err);
                     res.send(resObj.code1());
                     return;
                 }
                 UserJoke.User.findOne({_id:req.body.user_id}, function (err, user) {
                     if (err) {
-                        console.log(err);
                         res.send(resObj.code1());
                         return;
                     }
@@ -287,12 +329,11 @@ router.post('/jokeCollectorRemove', function (req, res) {
                         for (var j = 0; j < c.length; j++) {
                             if (c[j] == req.body.joke_id) {
                                 c.splice(j, 1);
-                                i--;
+                                j--;
                             }
                         }
                         user.save(function (err, user) {
                             if (err) {
-                                console.log(err);
                                 res.send(resObj.code1());
                                 return;
                             }
@@ -307,29 +348,23 @@ router.post('/jokeCollectorRemove', function (req, res) {
             res.send(resObj.code1());
         }
     });
-
 })
 
 router.post('/jokeCollectorAdd', function (req, res) {
     UserJoke.Joke.findOne({_id: req.body.joke_id}, function (err, joke) {
-        console.log('req.body:'+JSON.stringify(req.body));
         if (err) {
-            console.log(err);
             res.send(resObj.code1());
             return;
         }
         if (joke) {
-            console.log(JSON.stringify(joke));
             joke.collectors.push(req.body.user_id);
             joke.save(function (err, joke) {
                 if (err) {
-                    console.log(err);
                     res.send(resObj.code1());
                     return;
                 }
                 UserJoke.User.findOne({_id:req.body.user_id}, function (err, user) {
                     if (err) {
-                        console.log(err);
                         res.send(resObj.code1());
                         return;
                     }
@@ -337,7 +372,6 @@ router.post('/jokeCollectorAdd', function (req, res) {
                         user.collections.push(req.body.joke_id);
                         user.save(function (err, user) {
                             if (err) {
-                                console.log(err);
                                 res.send(resObj.code1());
                                 return;
                             }
@@ -354,22 +388,13 @@ router.post('/jokeCollectorAdd', function (req, res) {
     });
 
 })
+
 /**
- * {
-    nickName:String,
-    gender:Number,
-    city:String,
-    province:String,
-    country:String,
-    avatarUrl:String,
-    jokeContent:String,
-}
-    TODO,BUG:事务
+ * joke
  */
 router.post('/userJokeAdd', function (req, res) {
     UserJoke.User.findOne({_id: req.body.user_id}, function (err, user) {
         if (err) {
-            console.log(err);
             res.send(resObj.code1());
             return;
         }
@@ -379,15 +404,14 @@ router.post('/userJokeAdd', function (req, res) {
                 owner: req.body.user_id
             });
             user.jokes.push(joke);
+            // TODO,BUG:事务
             user.save(function (err, user) {
                 if (err) {
-                    console.log(err);
                     res.send(resObj.code1());
                     return;
                 }
                 joke.save(function (err) {
                     if (err) {
-                        console.log(err);
                         res.send(resObj.code1());
                         return;
                     }
@@ -395,18 +419,15 @@ router.post('/userJokeAdd', function (req, res) {
                 })
             });
         } else {
+            //低概率出错
             res.send(resObj.code1());
         }
     })
 });
 
-/**
- * 后端不分页了-_-...
- */
 router.post('/allUserJoke', function (req, res) {
     UserJoke.User.find().populate('jokes').exec(function (err, users) {
         if (err) {
-            console.log(err);
             res.send(resObj.code1());
             return;
         }
@@ -415,9 +436,8 @@ router.post('/allUserJoke', function (req, res) {
 });
 
 router.post('/oneUserJoke', function (req, res) {
-    UserJoke.User.findOne({_id: req.body.user_id}).populate('jokes').exec(function (err, user) {
+    UserJoke.User.findOne({_id: req.body._id}).populate('jokes').exec(function (err, user) {
         if (err) {
-            console.log(err);
             res.send(resObj.code1());
             return;
         }
@@ -434,7 +454,6 @@ router.post('/oneUserJoke', function (req, res) {
             });
             user.save(function (err,user) {
                 if(err){
-                    console.log(err);
                     res.send(resObj.code1());
                     return;
                 }

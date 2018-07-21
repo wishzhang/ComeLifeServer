@@ -30,42 +30,6 @@
 </tr>
 
 <tr>
-<td>get</td>
-<td>/jokeAdd</td>
-<td>userID,jokeContent</td>
-<td>成功：{code:0,msg:'success'}失败：{code:1,msg:'failed'}</td>
-<td>提交段子</td>
-<td>否</td>
-</tr>
-
-<tr>
-<td>get</td>
-<td>/jokeGet</td>
-<td>userID</td>
-<td>成功：{code:0,msg:'success',data:[{userID:'ZW',...总之是数据库里的一条段子记录}]}</td>
-<td>获取用户自身发布的所有段子</td>
-<td>否</td>
-</tr>
-
-<tr>
-<td>get</td>
-<td>/jokeGetAll</td>
-<td>无</td>
-<td>成功：{code:0,msg:'success',data:[{userID:'ZW',...总之是数据库里的一条段子记录}]}</td>
-<td>获取所有用户自身发布的所有段子</td>
-<td>否</td>
-</tr>
-
-<tr>
-<td>get</td>
-<td>/getJokesByPage</td>
-<td>userID&isALL=1&page=1</td>
-<td>成功：{code:0,msg:'success',data:[{userID:'ZW',...是数据库里的段子记录}]}</td>
-<td>根据参数，获取对应的段子，</td>
-<td>否</td>
-</tr>
-
-<tr>
 <td>post</td>
 <td>/userJokeAdd</td>
 <td></td>
@@ -153,6 +117,11 @@
 - jokeAdd发布段子  
 面向对象，通过运用对象，达到目标。一个jokeAdd的Page对象里的目标是将用户的段子信息提交并
 处理反馈。所以弄个对象来采集基础信息，弄个负责发送信息的，弄个处理xxx的，结束。
+
+#### 软件控制
+- 健壮性  
+描述：任何一句代码都有可能发生错误。程序初步处理发生错误较高概率的地方。  
+	- 出错响应(让用户有路可走)
 
 #### help
 
