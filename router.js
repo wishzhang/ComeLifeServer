@@ -36,6 +36,9 @@ var userMeta = {};
 var token;
 
 router.use(function (req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin','*');
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type,XFILENAME,XFILECATEGORY,XFILESIZE");
+
     //为每个访问服务器端口的用户分配token
     token = req.header('token');
     if (!token) {
@@ -235,6 +238,44 @@ router.post('/addSentence',function (req,res) {
         res.send(resObj.code0());
     })
 });
+
+router.post('/editSentence',function (req,res) {
+    Sentence.findOne({_id:req.body._id},function (err,sentence) {
+        if(err){
+            res.send(resObj.code1());
+            return;
+        }
+        if(sentence){
+            sentence.content=req.body.content;
+            sentence.author=req.body.author;
+            sentence.save(function (err,sententce) {
+                if(err){
+                    res.send(resObj.code1());
+                    return;
+                }
+                res.send(resObj.code0());
+            })
+        }else{
+            res.send(resObj.code1());
+        }
+    })
+})
+
+router.post('/delSentence',function (req,res) {
+    Sentence.findOneAndDelete({_id:req.body._id},function (err,sentence) {
+        if(err){
+            res.send(resObj.code1());
+            return;
+        }
+        if(sentence){
+            res.send(resObj.code0());
+        }else{
+            res.send(resObj.code1());
+        }
+    })
+})
+
+
 
 
 /**
