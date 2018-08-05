@@ -111,6 +111,33 @@
 <td>是</td>
 </tr>
 
+<tr>
+<td>post</td>
+<td>/addSentence</td>
+<td>content，author</td>
+<td></td>
+<td>添加句子</td>
+<td>是</td>
+</tr>
+
+<tr>
+<td>post</td>
+<td>/editSentence</td>
+<td>_id，content，author</td>
+<td></td>
+<td>编辑句子</td>
+<td>是</td>
+</tr>
+
+<tr>
+<td>post</td>
+<td>/delSentence</td>
+<td>_id</td>
+<td></td>
+<td>删除句子</td>
+<td>是</td>
+</tr>
+
 </table>
 
 #### 页面功能实现

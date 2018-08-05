@@ -23,6 +23,13 @@ var resObj = {
             msg: '服务器内部错误',
             data: data||[]
         });
+    },
+    code:function (code,msg,data) {
+        return JSON.stringify({
+            code:code,
+            msg:msg,
+            data:data
+        })
     }
 };
 
@@ -49,6 +56,59 @@ router.use(function (req, res, next) {
     userMeta[token] = {};
     next();
 });
+
+router.post('/register',function (req,res) {
+    UserJoke.User.findOne({username:req.body.username},function (err,doc) {
+        if(err){
+            res.send(resObj.code1())
+            return;
+        }
+        if(doc!=null){
+            res.send(resObj.code(2,'账号已被注册'))
+            return;
+        }
+        var user=new UserJoke.User({
+            username:req.body.username,
+            password:req.body.password
+        })
+        user.save(function (err,doc) {
+            if(err){
+                res.send(resObj.code1())
+                return;
+            }
+            res.send(resObj.code0(doc))
+        })
+    })
+})
+
+router.post('/login',function (req,res) {
+    UserJoke.User.findOne({
+        $or:[
+            {username:req.body.username,password:req.body.password},
+            {_id:req.body.user_id}
+        ]
+    },function (err,doc) {
+        if(err){
+            res.send(resObj.code1())
+            return;
+        }
+        if(doc===null){
+            res.send(resObj.code(2,'账号或密码错误'))
+            return;
+        }
+        res.send(resObj.code0(doc))
+    })
+})
+
+router.post('/getUserByUsername',function (req,res) {
+    UserJoke.User.findOne({username:req.body.username},function (err,doc) {
+        if(err){
+            res.send(resObj.code1())
+            return;
+        }
+        res.send(resObj.code0([doc]))
+    })
+})
 
 
 router.post('/talk',function(request,response){

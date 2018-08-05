@@ -2,6 +2,8 @@ const mongoose=require('../dbconnect');
 
 var userSchema = mongoose.Schema({
     uid:String,
+    username:String,
+    password:String,
     nickName:String,
     gender:Number,
     city:String,
