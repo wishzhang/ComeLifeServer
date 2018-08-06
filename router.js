@@ -69,7 +69,8 @@ router.post('/register',function (req,res) {
         }
         var user=new UserJoke.User({
             username:req.body.username,
-            password:req.body.password
+            password:req.body.password,
+            avatarUrl:'https://www.zhangw.xyz/images/portrait.png'
         })
         user.save(function (err,doc) {
             if(err){
@@ -87,7 +88,7 @@ router.post('/login',function (req,res) {
             {username:req.body.username,password:req.body.password},
             {_id:req.body.user_id}
         ]
-    },function (err,doc) {
+    }).populate('jokes').exec(function (err,doc) {
         if(err){
             res.send(resObj.code1())
             return;
@@ -96,7 +97,7 @@ router.post('/login',function (req,res) {
             res.send(resObj.code(2,'账号或密码错误'))
             return;
         }
-        res.send(resObj.code0(doc))
+        res.send(resObj.code0([doc]))
     })
 })
 
@@ -384,6 +385,16 @@ router.post('/addFeedback',function(req,res){
     })
 })
 
+router.post('/getFeedback',function (req,res) {
+    UserJoke.Feedback.find().exec(function (err,docs) {
+        if(err){
+            res.send(resObj.code1())
+            return
+        }
+        res.send(resObj.code0(docs));
+    })
+})
+
 /**
  * collection
  */
@@ -560,6 +571,35 @@ router.post('/oneUserJoke', function (req, res) {
                 }
                 res.send(resObj.code0([user]));
             })
+        }
+    })
+})
+
+/**
+ * 用户管理
+ * @type {Router|router|*}
+ */
+
+router.post('/getAllUser',function (req,res) {
+    UserJoke.User.find().exec(function (err,users) {
+        if(err){
+            res.send(resObj.code1())
+            return;
+        }
+        res.send(resObj.code0(users))
+    })
+})
+
+router.post('/delUser',function (req,res) {
+    UserJoke.User.findOneAndDelete({_id:req.body.user_id},function (err,doc) {
+        if(err){
+            res.send(resObj.code1());
+            return;
+        }
+        if(doc){
+            res.send(resObj.code0());
+        }else{
+            res.send(resObj.code1());
         }
     })
 })

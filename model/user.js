@@ -1,7 +1,6 @@
 const mongoose=require('../dbconnect');
 
 var userSchema = mongoose.Schema({
-    uid:String,
     username:String,
     password:String,
     nickName:String,
@@ -13,7 +12,8 @@ var userSchema = mongoose.Schema({
     jokes:[{type:mongoose.Schema.Types.ObjectId,ref:'Joke'}],
     collections:[{type:mongoose.Schema.Types.ObjectId,ref:'Joke'}],
     feedbacks:[{type:mongoose.Schema.Types.ObjectId,ref:'Feedback'}],
-    olives:[{type:mongoose.Schema.Types.ObjectId,ref:'Olive'}]
+    olives:[{type:mongoose.Schema.Types.ObjectId,ref:'Olive'}],
+    time:{type:Date,default:Date.now}
 });
 
 var jokeSchema=mongoose.Schema({
