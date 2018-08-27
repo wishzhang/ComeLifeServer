@@ -2,6 +2,7 @@
 var express = require('express');
 var path = require('path');
 var Router = require('./router');
+var SentenceRouter=require('./routes/sentence')
 
 var app = express();
 
@@ -9,10 +10,12 @@ var app = express();
 app.engine('html', require('express-art-template'));
 
 //应用模块
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
 //应用路由
 app.use(Router);
+
+app.use(SentenceRouter)
 
 
 module.exports = app;

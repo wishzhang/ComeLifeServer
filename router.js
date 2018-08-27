@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const UserJoke = require('./model/user');
-const Sentence=require('./model/sentence');
 const util = require('./utils/util');
 const bodyParser = require('body-parser');
 const http=require('http');
+
 
 router.use(bodyParser.urlencoded({extended: true}));
 router.use(bodyParser.json());
@@ -33,11 +33,6 @@ var resObj = {
     }
 };
 
-var allUserJokes = {
-    currentPage: 1,
-    num: 7,//每一页记录的数量
-    data: []
-};
 //保存各个用户独立的浏览状态 如 userMeta["user1"].allUserJokes
 var userMeta = {};
 var token;
@@ -111,7 +106,9 @@ router.post('/getUserByUsername',function (req,res) {
     })
 })
 
-
+/**
+ * 与机器人聊天
+ */
 router.post('/talk',function(request,response){
     var params={
         "perception": {
@@ -200,7 +197,6 @@ router.post('/addOlive',function (req,res) {
     })
 })
 
-//TODO:更新接口可修改
 router.post('/editOlive',function (req,res) {
     UserJoke.Olive.findOne({_id:req.body.olive_id},function (err,olive) {
         if(err){
@@ -272,71 +268,6 @@ router.post('/deleteOlive',function (req,res) {
         }
     })
 })
-
-/**
- * 句子迷
- */
-router.post('/getSentences',function (req,res) {
-    Sentence.find().exec(function (err,sentences) {
-        if(err){
-            res.send(resObj.code1());
-            return;
-        }
-        res.send(resObj.code0(sentences));
-    })
-})
-
-router.post('/addSentence',function (req,res) {
-    var sentence=new Sentence({
-        content:req.body.content,
-        author:req.body.author
-    });
-    sentence.save(function (err,sentence) {
-        if(err){
-            res.send(resObj.code1());
-            return;
-        }
-        res.send(resObj.code0());
-    })
-});
-
-router.post('/editSentence',function (req,res) {
-    Sentence.findOne({_id:req.body._id},function (err,sentence) {
-        if(err){
-            res.send(resObj.code1());
-            return;
-        }
-        if(sentence){
-            sentence.content=req.body.content;
-            sentence.author=req.body.author;
-            sentence.save(function (err,sententce) {
-                if(err){
-                    res.send(resObj.code1());
-                    return;
-                }
-                res.send(resObj.code0());
-            })
-        }else{
-            res.send(resObj.code1());
-        }
-    })
-})
-
-router.post('/delSentence',function (req,res) {
-    Sentence.findOneAndDelete({_id:req.body._id},function (err,sentence) {
-        if(err){
-            res.send(resObj.code1());
-            return;
-        }
-        if(sentence){
-            res.send(resObj.code0());
-        }else{
-            res.send(resObj.code1());
-        }
-    })
-})
-
-
 
 
 /**
@@ -603,5 +534,6 @@ router.post('/delUser',function (req,res) {
         }
     })
 })
+
 
 module.exports = router;

@@ -13,8 +13,17 @@ var userSchema = mongoose.Schema({
     collections:[{type:mongoose.Schema.Types.ObjectId,ref:'Joke'}],
     feedbacks:[{type:mongoose.Schema.Types.ObjectId,ref:'Feedback'}],
     olives:[{type:mongoose.Schema.Types.ObjectId,ref:'Olive'}],
+    likes:[{type:mongoose.Schema.Types.ObjectId,ref:'Sentence'}],
     time:{type:Date,default:Date.now}
 });
+
+var sentenceSchema=mongoose.Schema({
+    content:String,
+    author:String,
+    picname:String,
+    time:{type:Date,default:Date.now}
+});
+
 
 var jokeSchema=mongoose.Schema({
     jokeContent:String,
@@ -40,12 +49,12 @@ var User=mongoose.model('User',userSchema);
 var Joke=mongoose.model('Joke',jokeSchema);
 var Feedback=mongoose.model('Feedback',feedbackSchema);
 var Olive=mongoose.model('Olive',oliveSchema);
-
+var Sentence=mongoose.model('Sentence',sentenceSchema);
 
 module.exports={
-    User:User,
-
-    Joke:Joke,
-    Feedback:Feedback,
-    Olive:Olive
+    User,
+    Sentence,
+    Joke,
+    Feedback,
+    Olive
 };
