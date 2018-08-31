@@ -478,6 +478,7 @@ router.post('/allUserJoke', function (req, res) {
     })
 });
 
+//小程序的登录用此接口
 router.post('/oneUserJoke', function (req, res) {
     UserJoke.User.findOne({_id: req.body._id}).populate('jokes').exec(function (err, user) {
         if (err) {

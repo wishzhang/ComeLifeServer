@@ -49,7 +49,8 @@ var User=mongoose.model('User',userSchema);
 var Joke=mongoose.model('Joke',jokeSchema);
 var Feedback=mongoose.model('Feedback',feedbackSchema);
 var Olive=mongoose.model('Olive',oliveSchema);
-var Sentence=mongoose.model('Sentence',sentenceSchema);
+var Sentence=mongoose.model('Sentence',sentenceSchema)
+
 
 module.exports={
     User,

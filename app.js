@@ -3,6 +3,7 @@ var express = require('express');
 var path = require('path');
 var Router = require('./router');
 var SentenceRouter=require('./routes/sentence')
+var ColdJokeRouter=require('./routes/coldjoke')
 
 var app = express();
 
@@ -16,7 +17,7 @@ app.use(express.static('public'));
 app.use(Router);
 
 app.use(SentenceRouter)
-
+app.use(ColdJokeRouter)
 
 module.exports = app;
 
